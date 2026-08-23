@@ -24,7 +24,7 @@ from ctypes import (c_int, c_long, c_float, c_double, c_char_p,
 
 
 class ChanlunAPI:
-    """chanlun64.dll 的 Python 封装（ctypes 薄绑定）"""
+    """chanlun64_jt.dll 的 Python 封装（ctypes 薄绑定）"""
 
     def __init__(self, dll_path):
         if not os.path.exists(dll_path):

@@ -19,7 +19,7 @@ struct_calc.py - 投研取数入口：K 线源组装 + chanlun_dll 结构计算
 
 config（{实例根}/config/runtime.env，KEY=VALUE）；最小只需 TDX_ROOT：
     TDX_ROOT          # 通达信根目录（推导 vipdoc=TDX_ROOT/vipdoc、gbbq=TDX_ROOT/T0002/hq_cache/gbbq）
-    CHANLUN_DLL_PATH  # chanlun64.dll 独立配置（未设置则默认：部署 T0002/dlls + 开发 chanlun_dll/out/build）
+    CHANLUN_DLL_PATH  # chanlun64_jt.dll 独立配置（未设置则默认：部署 T0002/dlls + 开发 chanlun_dll/out/build）
     以下为可选覆盖（非标准布局时）：
     VIPDOC_ROOT       # vipdoc 根目录显式覆盖
     GBBQ_PATH         # gbbq 除权库显式覆盖
@@ -93,14 +93,14 @@ def _tdx_root(env):
 
 
 def resolve_dll_path(env, root=None):
-    """chanlun64.dll 解析（优先级）：① 插件包 vendor/chanlun64.dll（发布自带）→
+    """chanlun64_jt.dll 解析（优先级）：① 插件包 vendor/chanlun64_jt.dll（发布自带）→
     ② CHANLUN_DLL_PATH 显式 → ③ 默认推导（开发 out/build + 部署 T0002/dlls）。
 
-    chanlun64.dll 是 chanlun_dll 编译产物，不从 TDX_ROOT 推导。插件发布形态随包 vendor/ 分发，优先命中即无需任何配置。
+    chanlun64_jt.dll 是 chanlun_dll 编译产物，不从 TDX_ROOT 推导。插件发布形态随包 vendor/ 分发，优先命中即无需任何配置。
     """
     # ① 插件包 vendor（root 默认 = instance_root() = 插件包根；vendor 与 skills/ 同级）
     root = root or instance_root()
-    bundled = os.path.join(root, "vendor", "chanlun64.dll")
+    bundled = os.path.join(root, "vendor", "chanlun64_jt.dll")
     if os.path.exists(bundled):
         return bundled
     # ② 显式配置
@@ -112,14 +112,14 @@ def resolve_dll_path(env, root=None):
     # ③ 默认推导
     ws = os.path.dirname(root)  # workspace 根
     candidates = [
-        os.path.join(ws, "chanlun_dll", "out", "build", "x64-Release", "chanlun64.dll"),
-        os.path.join(ws, "chanlun_dll", "out", "build", "x64-Debug", "chanlun64.dll"),
-        os.path.join(root, "T0002", "dlls", "chanlun64.dll"),
+        os.path.join(ws, "chanlun_dll", "out", "build", "x64-Release", "chanlun64_jt.dll"),
+        os.path.join(ws, "chanlun_dll", "out", "build", "x64-Debug", "chanlun64_jt.dll"),
+        os.path.join(root, "T0002", "dlls", "chanlun64_jt.dll"),
     ]
     for c in candidates:
         if os.path.exists(c):
             return c
-    raise FileNotFoundError("chanlun64.dll 未找到，尝试路径: {0}".format(candidates))
+    raise FileNotFoundError("chanlun64_jt.dll 未找到，尝试路径: {0}".format(candidates))
 
 
 def resolve_vipdoc_root(env, root=None):

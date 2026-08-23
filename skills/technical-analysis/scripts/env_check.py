@@ -6,7 +6,7 @@
 """
 env_check.py - 技术面插件（dsh-stock-jt）环境配套自检
 
-检查投研取数所需的运行时路径是否就绪：vipdoc / chanlun64.dll / gbbq / MCP 备源。
+检查投研取数所需的运行时路径是否就绪：vipdoc / chanlun64_jt.dll / gbbq / MCP 备源。
 供 LLM 在会话中主动声明插件环境配套、向用户收集缺失路径并落盘。
 
 用法：
@@ -85,9 +85,9 @@ def _tdx_root(env):
 
 
 def resolve_dll_path(env, root=None):
-    """chanlun64.dll（优先级）：① 插件包 vendor/ 自带 → ② CHANLUN_DLL_PATH 显式 → ③ 默认推导。同 struct_calc 口径。"""
+    """chanlun64_jt.dll（优先级）：① 插件包 vendor/ 自带 → ② CHANLUN_DLL_PATH 显式 → ③ 默认推导。同 struct_calc 口径。"""
     root = root or package_root()
-    bundled = os.path.join(root, "vendor", "chanlun64.dll")
+    bundled = os.path.join(root, "vendor", "chanlun64_jt.dll")
     if os.path.exists(bundled):
         return bundled
     p = env.get("CHANLUN_DLL_PATH", "")
@@ -97,14 +97,14 @@ def resolve_dll_path(env, root=None):
             return p
     ws = os.path.dirname(root)  # workspace 根
     candidates = [
-        os.path.join(ws, "chanlun_dll", "out", "build", "x64-Release", "chanlun64.dll"),
-        os.path.join(ws, "chanlun_dll", "out", "build", "x64-Debug", "chanlun64.dll"),
-        os.path.join(root, "T0002", "dlls", "chanlun64.dll"),
+        os.path.join(ws, "chanlun_dll", "out", "build", "x64-Release", "chanlun64_jt.dll"),
+        os.path.join(ws, "chanlun_dll", "out", "build", "x64-Debug", "chanlun64_jt.dll"),
+        os.path.join(root, "T0002", "dlls", "chanlun64_jt.dll"),
     ]
     for c in candidates:
         if os.path.exists(c):
             return c
-    raise FileNotFoundError("chanlun64.dll 未找到，尝试路径: {0}".format(candidates))
+    raise FileNotFoundError("chanlun64_jt.dll 未找到，尝试路径: {0}".format(candidates))
 
 
 def resolve_vipdoc_root(env, root=None):
@@ -217,18 +217,18 @@ def check(env):
             "detail": "当前模式不需要 vipdoc（仅 tdx-mcp）", "need": "",
         })
 
-    # 2. chanlun64.dll（独立配置；默认推导路径在插件包布局下通常不适用）
+    # 2. chanlun64_jt.dll（独立配置；默认推导路径在插件包布局下通常不适用）
     try:
         dll = resolve_dll_path(env)
         items.append({
             "key": "CHANLUN_DLL_PATH", "ok": True, "state": "ok",
-            "detail": "chanlun64.dll 可用: {0}".format(dll), "need": "",
+            "detail": "chanlun64_jt.dll 可用: {0}".format(dll), "need": "",
         })
     except FileNotFoundError as e:
         items.append({
             "key": "CHANLUN_DLL_PATH", "ok": False, "state": "missing",
             "detail": str(e),
-            "need": "chanlun64.dll 的完整路径（chanlun_dll 编译产物），如 D:\\trading_kit\\chanlun_dll\\out\\build\\x64-Release\\chanlun64.dll",
+            "need": "chanlun64_jt.dll 的完整路径（chanlun_dll 编译产物），如 D:\\trading_kit\\chanlun_dll\\out\\build\\x64-Release\\chanlun64_jt.dll",
         })
 
     # 3. Python 解释器 + 依赖（struct_calc/kline_source 的 PEP 723 声明；本脚本零第三方依赖，

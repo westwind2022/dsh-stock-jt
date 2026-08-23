@@ -12,7 +12,7 @@ dsh-stock-jt/
 ├── cordis.patch.yml       # bundle patch：insert 一行（dshmarket 同款）
 ├── package.json           # name + main + dsh.bundle.patch + dsh.client
 ├── vendor/
-│   └── chanlun64.dll      # ★ 随包分发的 chanlun_dll 编译产物（x64 静态链接，见「dll 版本同步」）
+│   └── chanlun64_jt.dll      # ★ 随包分发的 chanlun_dll 编译产物（x64 静态链接，见「dll 版本同步」）
 ├── config/
 │   └── runtime.env.example # 部署参数模板（复制为 runtime.env 填入）
 └── skills/
@@ -79,16 +79,16 @@ dsh plugin --profile web remove dsh-stock-jt
 python skills/technical-analysis/scripts/struct_calc.py 600519 day 250
 ```
 
-## dll 版本同步纪律（vendor/chanlun64.dll）
+## dll 版本同步纪律（vendor/chanlun64_jt.dll）
 
-- **来源**：`chanlun_dll/out/build/x64-Release/chanlun64.dll`（自研编译产物，静态链接 /MT，单文件无外部运行库依赖）。
-- **架构**：x64 绑定（当前构建）。跨架构部署需重新编译并替换 `vendor/chanlun64.dll`。
+- **来源**：`chanlun_dll/out/build/x64-Release/chanlun64_jt.dll`（自研编译产物，静态链接 /MT，单文件无外部运行库依赖）。
+- **架构**：x64 绑定（当前构建）。跨架构部署需重新编译并替换 `vendor/chanlun64_jt.dll`。
 - **同步**：chanlun_dll 升级（改特征/结构计算）后，须**重新复制新 dll 到 `vendor/` 并 bump 插件版本**（`package.json` version + 本 README 登记），否则插件携带旧结构算法。
 - **解析优先级**（struct_calc.py / env_check.py 同口径）：包内 `vendor/` → `CHANLUN_DLL_PATH` → 默认推导（开发 out/build + 部署 T0002/dlls）。
 
 ## 环境配套自检与引导（会话内）
 
-调用 `technical-analysis` 技能前，LLM 会先跑 `scripts/env_check.py` 自检数据源模式 / vipdoc / tdx-mcp / chanlun64.dll / **Python 依赖**（numpy/pandas/requests）/ gbbq：
+调用 `technical-analysis` 技能前，LLM 会先跑 `scripts/env_check.py` 自检数据源模式 / vipdoc / tdx-mcp / chanlun64_jt.dll / **Python 依赖**（numpy/pandas/requests）/ gbbq：
 
 ```sh
 python skills/technical-analysis/scripts/env_check.py            # 人类可读报告
@@ -117,7 +117,7 @@ python skills/technical-analysis/scripts/env_check.py --json    # 机器可读�
 
 | 组件 | 同步要点 |
 |---|---|
-| `vendor/chanlun64.dll` | chanlun_dll 升级后重新复制并 bump 版本（见「dll 版本同步」） |
+| `vendor/chanlun64_jt.dll` | chanlun_dll 升级后重新复制并 bump 版本（见「dll 版本同步」） |
 | 知识层 `skills/technical-analysis/internal/` | 推理规则/特征/config 变更随版本发布 |
 
 ## 红线（技术面四条，见 SKILL.md）

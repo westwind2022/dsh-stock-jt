@@ -59,7 +59,7 @@ metadata:
   python scripts/struct_calc.py 600519 month 200   # 月线
   python scripts/struct_calc.py 600519 m30 100     # 30 分钟
   ```
-- **配置**：`config/runtime.env.example` → 部署机复制为 `config/runtime.env`（或环境变量 `TA_RUNTIME_ENV` 显式指向）；最小只需 `TDX_ROOT`。**chanlun64.dll 已随包 `vendor/` 分发**（x64 静态链接，默认命中，无需配置；仅覆盖时才设 `CHANLUN_DLL_PATH`）。
+- **配置**：`config/runtime.env.example` → 部署机复制为 `config/runtime.env`（或环境变量 `TA_RUNTIME_ENV` 显式指向）；最小只需 `TDX_ROOT`。**chanlun64_jt.dll 已随包 `vendor/` 分发**（x64 静态链接，默认命中，无需配置；仅覆盖时才设 `CHANLUN_DLL_PATH`）。
 - **字段语义真相源**：结构数据字段语义（六表契约）随本 skill 内联摘要；字段 → 锚定见 `internal/技术面/config/feature_anchor.json`。
 
 ## 环境就绪检查与配套引导（调用前置 · 必做）
@@ -75,7 +75,7 @@ python scripts/env_check.py --json    # 机器可读 JSON（LLM 解析用）
 
 **步骤 2 · 按结果分流**：
 
-- `ready: true`（所选数据源 + chanlun64.dll + 目标解释器依赖就绪）→ 直接进入研判流程；`optional-missing` 项（gbbq）在报告中标注即可，不阻塞。
+- `ready: true`（所选数据源 + chanlun64_jt.dll + 目标解释器依赖就绪）→ 直接进入研判流程；`optional-missing` 项（gbbq）在报告中标注即可，不阻塞。
 - `ready: false`（存在 `missing`/`invalid` 硬缺失）→ **优先引导用户在页面配置**（路径 A），会话内 `--write` 为备选（路径 B）：
   1. **路径 A（推荐）**：提示用户到 **设置 → 技术面研判 → 环境设置** 页填写缺失项（数据源复选框 + 按勾选填路径/token + 保存），保存后自动落盘 runtime.env；告诉用户保存完成后回来，我重检继续；
   2. **路径 B（会话内）**：用户也可直接在此提供路径/token，用 `--write` 落盘并重检：
@@ -92,7 +92,7 @@ python scripts/env_check.py --json    # 机器可读 JSON（LLM 解析用）
 | ✅ tdx-mcp | `tdxmcp` | MCP token `TDX_MCP_TOKEN`（**用户自备，无通用 token**，机密写页面） |
 | ✅✅ 两者 | `vipdoc,tdxmcp`（默认） | `TDX_ROOT` + `TDX_MCP_TOKEN` 都要 |
 
-> 勾选联动：选 vipdoc 才需要 TDX_ROOT，选 tdx-mcp 才需要 token，未选源自动 `skipped`。`chanlun64.dll` 已随包 vendor/ 分发；VIPDOC_ROOT/GBBQ_PATH 由 TDX_ROOT 推导、CHANLUN_DLL_PATH 不提供配置——均无需用户提供。
+> 勾选联动：选 vipdoc 才需要 TDX_ROOT，选 tdx-mcp 才需要 token，未选源自动 `skipped`。`chanlun64_jt.dll` 已随包 vendor/ 分发；VIPDOC_ROOT/GBBQ_PATH 由 TDX_ROOT 推导、CHANLUN_DLL_PATH 不提供配置——均无需用户提供。
 
 **解释器与 venv 供给（用户可控，不自动装）**：插件需要 **Python ≥3.10 解释器**（PEP 723）；目标机器无 python 或要跨机可控时，**推荐在设置页显式指定 `VENV_PYTHON` 绝对路径**：
 
