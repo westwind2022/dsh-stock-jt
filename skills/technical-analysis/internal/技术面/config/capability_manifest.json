@@ -1,0 +1,174 @@
+{
+  "manifest_version": "1.1",
+  "note": "能力自声明（机器可读）。schools=特征库（生产者侧，按流派）；injection_points=注入点自声明（消费者侧，按结构/注入点）——特征在注入点上自声明能力，每个注入点可单独维护。executor: machine=机器产事实 / human=人用（不落机器实现清单）。",
+
+  "injection_points": [
+    {
+      "id": "势/月线/成色",
+      "question": "值不值得分析 · 空间",
+      "current": "界壁 = 布林线上下轨（围绕价值的大周期波动区间）",
+      "swappable": ["前高前低（结构极值）", "通道线"],
+      "declarations": [
+        { "school": "wave", "factor": "布林线/均线带", "role": "quality", "field": "kline.ma20/ma60（布林线字段待补）", "executor": "machine" },
+        { "school": "chanlun", "factor": "结构极值·前高前低", "role": "coordinate", "field": "bi_frac.frac_price", "executor": "machine" }
+      ]
+    },
+    {
+      "id": "势/周线/成色",
+      "question": "值不值得分析 · 方向",
+      "current": "方向 = 周线 60 线角度（涨潮/落潮）+ 高低点序列力度",
+      "swappable": ["DEA 角度（MACD）", "高低点序列（N 字型同步抬高/降低）"],
+      "declarations": [
+        { "school": "chanlun", "factor": "ma60Slope", "role": "quality", "field": "kline.ma60 斜率", "executor": "machine" },
+        { "school": "chanlun", "factor": "deaSlope", "role": "quality", "field": "kline.dea 斜率", "executor": "machine" },
+        { "school": "wave", "factor": "均线多头", "role": "quality", "field": "kline.ma5/ma20/ma60", "executor": "machine" }
+      ]
+    },
+    {
+      "id": "形/架梯套/成色",
+      "question": "值不值的等 · 新生趋势成色（已发生事实）",
+      "current": "成坡（60线上翘+过前高+堆量）+ 挂坡（回踩60线不破+缩量）",
+      "swappable": ["简单回调/复杂回调（箱体蓄力）的分级口径"],
+      "declarations": [
+        { "school": "chanlun", "factor": "量能", "role": "quality", "field": "bi_frac.vol_sum + kline.vol_ma20", "executor": "machine" },
+        { "school": "wave", "factor": "均线多头", "role": "quality", "field": "kline.ma5/ma20/ma60", "executor": "machine" },
+        { "school": "wave", "factor": "回调深浅", "role": "quality", "field": "fibRetraceZone", "executor": "machine" },
+        { "school": "wyckoff", "factor": "supplyExhaustion", "role": "quality", "field": "bi_frac.vol_sum 沿链递减", "executor": "machine" }
+      ]
+    },
+    {
+      "id": "形/区间套/成色",
+      "question": "值不值的等 · 衰竭成色（已发生事实）",
+      "current": "多级别背驰共振（月背离→周背驰→日背驰→30分背驰）",
+      "swappable": ["盘整背驰/趋势背驰/有效背驰口径"],
+      "declarations": [
+        { "school": "chanlun", "factor": "MACD背驰", "role": "quality", "field": "bi_frac.macd_area", "executor": "machine" },
+        { "school": "chanlun", "factor": "力度背驰", "role": "quality", "field": "bi_frac.pct_change", "executor": "machine" },
+        { "school": "wyckoff", "factor": "zsPsVolExpand", "role": "quality", "field": "bi_frac.vol_sum ÷ kline.vol_ma20", "executor": "machine" }
+      ]
+    },
+    {
+      "id": "形/端子/成色",
+      "question": "现在能不能做 · 入场（第三腿起步第一棒，终结递归）",
+      "current": "两根大阳线（过前高）：归纳=本级别两根大阳线 / 演绎=次级别架梯分型成色",
+      "swappable": ["反转 K 的突破", "均线黏连的一阳穿多线突破"],
+      "declarations": [
+        { "school": "wave", "factor": "两根大阳线", "role": "quality", "field": "kline 阳线实体 + bi_frac.break_type", "executor": "machine" },
+        { "school": "chanlun", "factor": "反转 K / 阳线突破", "role": "quality", "field": "kline + bi_frac.break_type", "executor": "machine" }
+      ]
+    },
+    {
+      "id": "形/第三腿/成色",
+      "question": "买/持/卖 · 持仓管理（正在发生）",
+      "current": "起步=回踩缩量(空中加油) / 山腰=延续 / 顶=放量滞涨(努力无结果)",
+      "swappable": ["突破递减（威科夫）", "墓碑线（裸K）"],
+      "declarations": [
+        { "school": "chanlun", "factor": "突破真假", "role": "quality", "field": "bi_frac.break_type", "executor": "machine" },
+        { "school": "wyckoff", "factor": "sot", "role": "quality", "field": "bi_frac.vol_sum↑ 而 pct_change↓", "executor": "human" },
+        { "school": "wyckoff", "factor": "breakoutDecay", "role": "quality", "field": "bi_frac.pct_change 沿链递减", "executor": "human" }
+      ]
+    },
+    {
+      "id": "形/第三腿/刻度",
+      "question": "会到哪 · 目标位（几何投射）",
+      "current": "波浪尺六档：后腿低点 + k×(前腿高−前腿低)，k∈{1,1.382,1.5,1.618,2,2.618}",
+      "swappable": ["黄金分割回撤位", "时间周期（等周期线）"],
+      "declarations": [
+        { "school": "wave", "factor": "waveRuler_targets", "role": "scale", "field": "三点自算", "executor": "machine" },
+        { "school": "wave", "factor": "fibRetraceZone", "role": "scale", "field": "三点自算", "executor": "machine" },
+        { "school": "wave", "factor": "resonanceZone", "role": "scale", "field": "多周期分片交叉", "executor": "machine" },
+        { "school": "chanlun", "factor": "回调比例/背驰面积比", "role": "scale", "field": "bi_frac.pct_change/macd_area", "executor": "machine" }
+      ]
+    },
+    {
+      "id": "形/第三腿/止损止盈",
+      "question": "何时退 · 持仓管理（工具交人执行）",
+      "current": "止损=启动点/后腿回踩低点；止盈=努力无结果(放量滞涨) + 周期对周期",
+      "swappable": ["突破递减（威科夫）", "墓碑线（裸K）"],
+      "declarations": [
+        { "school": "wyckoff", "factor": "breakoutDecay", "role": "quality", "field": "bi_frac.pct_change 沿链递减", "executor": "human" },
+        { "school": "wyckoff", "factor": "sot", "role": "quality", "field": "bi_frac.vol_sum↑ 而 pct_change↓", "executor": "human" },
+        { "school": "chanlun", "factor": "背驰卖点", "role": "quality", "field": "bi_frac.macd_area", "executor": "human" },
+        { "school": "wave", "factor": "sellSignal_1/2/3", "role": "quality", "field": "目标位清单 + 发射状态", "executor": "human" }
+      ]
+    }
+  ],
+
+  "schools": [
+    {
+      "school": "chanlun",
+      "name": "缠论",
+      "role_primary": "coordinate",
+      "gates": ["gate_1", "gate_2", "gate_3"],
+      "boundary": "只消费结构数据 + bi_frac 四量化列；不复刻 DLL 二值检出、不预测走势",
+      "factors": [
+        { "name": "笔定位", "role": "coordinate", "gate": "all", "field": "bi_frac.frac_type/frac_idx/frac_price + prev/next", "executor": "machine" },
+        { "name": "段定位", "role": "coordinate", "gate": "all", "field": "duan_frac.frac_idx", "executor": "machine" },
+        { "name": "路定位", "role": "coordinate", "gate": "all", "field": "road_frac.frac_idx", "executor": "machine" },
+        { "name": "中枢定位", "role": "coordinate", "gate": "gate_2", "field": "zhongshu.zg/zd/gg/dd/zs_start~end_idx", "executor": "machine" },
+        { "name": "MACD背驰", "role": "quality", "gate": "gate_1/fail_sell", "field": "bi_frac.macd_area", "executor": "machine" },
+        { "name": "力度背驰", "role": "quality", "gate": "gate_1/fail_sell", "field": "bi_frac.pct_change", "executor": "machine" },
+        { "name": "量能", "role": "quality", "gate": "gate_1/gate_2", "field": "bi_frac.vol_sum + kline.vol_ma20", "executor": "machine" },
+        { "name": "中枢质量窄幅", "role": "quality", "gate": "gate_2", "field": "zhongshu.range_ratio/oscillation_ratio", "executor": "machine" },
+        { "name": "突破真假", "role": "quality", "gate": "gate_3", "field": "bi_frac.break_type", "executor": "machine" },
+        { "name": "回调比例", "role": "scale", "gate": "gate_2", "field": "bi_frac.pct_change", "executor": "machine" },
+        { "name": "背驰面积比", "role": "scale", "gate": "gate_1/fail_sell", "field": "bi_frac.macd_area", "executor": "machine" }
+      ]
+    },
+    {
+      "school": "wave",
+      "name": "波浪",
+      "role_primary": "scale",
+      "gates": ["gate_1", "gate_2", "gate_3"],
+      "boundary": "只客观测回调幅度/斐波那契分位/波浪尺倍率/时间周期（纯几何）；不判浪序、不预测、不下卖点结论",
+      "factors": [
+        { "name": "nShapeLeg", "role": "coordinate", "gate": "all", "field": "bi_frac.frac_type + prev1/prev2_frac_idx", "executor": "machine" },
+        { "name": "waveOrder", "role": "coordinate", "gate": "all", "field": "闸门位置推导", "executor": "machine" },
+        { "name": "doubleBreakout", "role": "coordinate", "gate": "gate_1", "field": "bi_frac.frac_price + kline.ma60", "executor": "machine" },
+        { "name": "均线多头", "role": "quality", "gate": "gate_1", "field": "kline.ma5/ma20/ma60", "executor": "machine" },
+        { "name": "回调深浅", "role": "quality", "gate": "gate_2", "field": "fibRetraceZone", "executor": "machine" },
+        { "name": "fibRetraceZone", "role": "scale", "gate": "gate_2", "field": "三点自算（前腿高低点+后腿低点）", "executor": "machine" },
+        { "name": "waveRuler_targets", "role": "scale", "gate": "gate_3", "field": "后腿低点 + k×(前腿高−前腿低)", "executor": "machine" },
+        { "name": "waveRuler_prevCycle3to1", "role": "scale", "gate": "gate_1", "field": "上一轮三点自算", "executor": "machine" },
+        { "name": "waveTimeRatio", "role": "scale", "gate": "gate_2", "field": "bi_frac.frac_idx 差", "executor": "machine" },
+        { "name": "waveTimeValid", "role": "scale", "gate": "gate_2", "field": "bi_frac.frac_idx 差", "executor": "machine" },
+        { "name": "resonanceZone", "role": "scale", "gate": "gate_2/sell", "field": "多周期分片交叉", "executor": "machine" }
+      ]
+    },
+    {
+      "school": "wyckoff",
+      "name": "威科夫",
+      "role_primary": "quality",
+      "gates": ["gate_1", "gate_2", "gate_3", "fail_sell"],
+      "boundary": "按 FeatureSpec.h 注释口径以分片库字段重建等价因子（数值）；不判主力意图、不新增因子",
+      "factors": [
+        { "name": "creekUpper/rangeLower", "role": "coordinate", "gate": "gate_2", "field": "zhongshu.zg/zd", "executor": "machine" },
+        { "name": "supplyExhaustion", "role": "quality", "gate": "gate_2", "field": "bi_frac.vol_sum 沿链递减", "executor": "machine" },
+        { "name": "zsPsVolExpand", "role": "quality", "gate": "gate_2", "field": "bi_frac.vol_sum ÷ kline.vol_ma20", "executor": "machine" },
+        { "name": "zsArVolShrink", "role": "quality", "gate": "gate_2", "field": "后一笔 vol_sum ÷ 前一笔", "executor": "machine" },
+        { "name": "zsUpLegAvgVolExpand", "role": "quality", "gate": "gate_2", "field": "vol_sum 按 frac_type 分组比", "executor": "machine" },
+        { "name": "zsDownLegAvgVolShrink", "role": "quality", "gate": "gate_2", "field": "vol_sum 按 frac_type 分组比", "executor": "machine" },
+        { "name": "washoutOrDistribution", "role": "quality", "gate": "gate_2", "field": "bi_frac.vol_sum 趋势 + zhongshu.range_ratio", "executor": "machine" },
+        { "name": "springTso", "role": "quality", "gate": "gate_2", "field": "bi_frac.break_type + vol_sum 缩量", "executor": "machine" },
+        { "name": "zsNarRange", "role": "quality", "gate": "gate_2", "field": "zhongshu.range_ratio", "executor": "machine" },
+        { "name": "sot", "role": "quality", "gate": "fail_sell", "field": "bi_frac.vol_sum↑ 而 pct_change↓", "executor": "human" },
+        { "name": "breakoutDecay", "role": "quality", "gate": "top", "field": "bi_frac.pct_change 沿链递减", "executor": "human" },
+        { "name": "volRatio", "role": "scale", "gate": "all", "field": "bi_frac.vol_sum ÷ kline.vol_ma20", "executor": "machine" },
+        { "name": "zsTimeSpan", "role": "scale", "gate": "gate_2", "field": "zhongshu.zs_end_idx − zs_start_idx", "executor": "machine" }
+      ]
+    },
+    {
+      "school": "value_line",
+      "name": "价值线",
+      "role_primary": "extension",
+      "gates": ["gate_1_pre"],
+      "boundary": "读 value_line.json polar/excellent/abnormal；估值非择时，只作底部托底论据",
+      "factors": [
+        { "name": "value_pe", "role": "extension", "gate": "gate_1_pre", "field": "value_line.json.value_pe", "executor": "machine" },
+        { "name": "net_real_price", "role": "extension", "gate": "gate_1_pre", "field": "value_line.json.net_real_price", "executor": "machine" },
+        { "name": "annualized_eps/roe_weighted/gross_margin/net_margin/net_profit_yoy/revenue_yoy", "role": "extension", "gate": "gate_1_pre", "field": "value_line.json.*", "executor": "machine" },
+        { "name": "pe_ttm/premium_asset_ratio/cash_debt_ratio", "role": "extension", "gate": "gate_1_pre", "field": "value_line.json.*", "executor": "machine" }
+      ]
+    }
+  ]
+}

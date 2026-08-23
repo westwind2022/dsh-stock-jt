@@ -1,0 +1,174 @@
+{
+  "anchor_version": "1.0",
+  "note": "特征↔数据锚定表（特征→字段锚定 + 特征→特征组合）。field 指向 db/schema.md 字段（不重复字段语义）；judge=判定口径、locate=定位；logic 只标类型（LLM 公共能力：比较/交集/加权/条件/排序/几何投射，不展开）。方法（成色/刻度/止损止盈）= 特征 + 逻辑，声明在注入点文件「当前实现」。",
+
+  "features": [
+    {
+      "name": "过前高",
+      "schools": ["chanlun", "wave"],
+      "logic": "比较",
+      "anchors": [
+        { "field": "bi_frac.frac_price", "locate": "prev2_frac_idx 定位前一同向笔", "judge": "当前笔 frac_price > 前一同向笔 frac_price" }
+      ]
+    },
+    {
+      "name": "60线上翘",
+      "schools": ["chanlun"],
+      "logic": "比较",
+      "anchors": [
+        { "field": "kline.ma60", "judge": "斜率向上（最近 N 根 ma60 递增，N 默认 3；前置 ma60=0.0 需过滤，见 schema 消费坑 P2）" }
+      ]
+    },
+    {
+      "name": "挂坡不破",
+      "schools": ["chanlun"],
+      "logic": "比较",
+      "anchors": [
+        { "field": "bi_frac.frac_price", "field2": "kline.ma60", "judge": "后腿 frac_price >= 同 frac_idx 的 ma60" }
+      ]
+    },
+    {
+      "name": "突破真假",
+      "schools": ["chanlun", "wyckoff"],
+      "logic": "条件",
+      "anchors": [
+        { "field": "bi_frac.break_type", "judge": "breakout_valid=真突破 / breakout_fake=假突破 / breakdown_valid=真跌破 / breakdown_fake=假跌破 / none=未突破" }
+      ]
+    },
+    {
+      "name": "背驰",
+      "schools": ["chanlun"],
+      "logic": "比较",
+      "anchors": [
+        { "field": "bi_frac.macd_area", "locate": "prev2_frac_idx 定位前一同向笔（顶分型段/底分型段正负号见 schema）", "judge": "后段 < 前段" },
+        { "field": "bi_frac.pct_change", "judge": "后段绝对值 < 前段（力度背驰）" }
+      ]
+    },
+    {
+      "name": "堆量",
+      "schools": ["chanlun"],
+      "logic": "比较",
+      "anchors": [
+        { "field": "bi_frac.vol_sum", "judge": "≥ 前下跌笔 ×1.2（阈值来源表）" }
+      ]
+    },
+    {
+      "name": "缩量",
+      "schools": ["chanlun", "wyckoff"],
+      "logic": "比较",
+      "anchors": [
+        { "field": "bi_frac.vol_sum", "judge": "沿 prev 链逐次回踩递减（供给枯竭）；回调笔 ≤ 前上涨笔 ×0.7" }
+      ]
+    },
+    {
+      "name": "回调深浅",
+      "schools": ["wave"],
+      "logic": "比较",
+      "anchors": [
+        { "field": "bi_frac.pct_change", "judge": "后腿幅度 ÷ 前腿幅度：0.382 浅 / 0.5 / 0.618 深（三点自算）" }
+      ]
+    },
+    {
+      "name": "空中加油",
+      "schools": ["wyckoff"],
+      "logic": "比较",
+      "anchors": [
+        { "field": "bi_frac.vol_sum", "judge": "回踩缩量（健康回踩蓄力）" }
+      ]
+    },
+    {
+      "name": "努力无结果",
+      "schools": ["wyckoff"],
+      "logic": "比较",
+      "anchors": [
+        { "field": "bi_frac.vol_sum", "field2": "bi_frac.pct_change", "judge": "vol_sum 升 而 pct_change 降（放量滞涨）" }
+      ]
+    },
+    {
+      "name": "波浪尺目标位",
+      "schools": ["wave"],
+      "logic": "几何投射",
+      "anchors": [
+        { "field": "bi_frac.frac_price", "judge": "后腿低点 + k×(前腿高 − 前腿低)，k ∈ {1, 1.382, 1.5, 1.618, 2, 2.618}（三点自算）" }
+      ]
+    },
+    {
+      "name": "启动点",
+      "schools": ["chanlun"],
+      "logic": "条件",
+      "anchors": [
+        { "field": "bi_frac.frac_price", "judge": "第三腿突破前的启动位" }
+      ]
+    },
+    {
+      "name": "后腿低点",
+      "schools": ["chanlun"],
+      "logic": "比较",
+      "anchors": [
+        { "field": "bi_frac.frac_price", "judge": "架梯·后腿回踩低点（大级别底仓硬止损位）" }
+      ]
+    },
+    {
+      "name": "界壁",
+      "schools": ["wave"],
+      "logic": "条件",
+      "anchors": [
+        { "field": "kline.ma20", "field2": "kline.ma60", "judge": "月线布林线上下轨 = 围绕价值的大周期波动区间（布林线字段待补；ma20 上轨近似 / ma60 中枢近似）" }
+      ]
+    },
+    {
+      "name": "方向",
+      "schools": ["chanlun"],
+      "logic": "比较",
+      "anchors": [
+        { "field": "kline.ma60", "judge": "周线 60 线角度：斜率向上 = 涨潮（多头）/ 向下 = 落潮（空头）" }
+      ]
+    },
+    {
+      "name": "力度",
+      "schools": ["wave"],
+      "logic": "比较",
+      "anchors": [
+        { "field": "bi_frac.frac_price", "judge": "高低点序列延续性：加速 / 匀速 / 减速 / 背离" }
+      ]
+    },
+    {
+      "name": "两根大阳线",
+      "schools": ["wave", "chanlun"],
+      "logic": "条件",
+      "anchors": [
+        { "field": "kline.close", "field2": "kline.open", "judge": "两根实体大阳线起步 + 过前高（利强弊空，只做小级别作递归终结）" }
+      ]
+    },
+    {
+      "name": "区间套",
+      "schools": ["chanlun"],
+      "logic": "交集",
+      "composed_of": [
+        { "feature": "背驰", "levels": ["month", "week", "day", "m30"] }
+      ],
+      "judge": "多级别背驰共振（月背离 → 周背驰 → 日背驰 → 30 分背驰）"
+    },
+    {
+      "name": "成坡",
+      "schools": ["chanlun"],
+      "logic": "条件",
+      "composed_of": [
+        { "feature": "60线上翘" },
+        { "feature": "过前高" },
+        { "feature": "堆量" }
+      ],
+      "judge": "60 线首次上翘 + 过前高 + 前腿堆量"
+    },
+    {
+      "name": "挂坡",
+      "schools": ["chanlun"],
+      "logic": "条件",
+      "composed_of": [
+        { "feature": "挂坡不破" },
+        { "feature": "缩量" }
+      ],
+      "judge": "回踩 60 线不破 + 缩量（供给枯竭）"
+    }
+  ]
+}

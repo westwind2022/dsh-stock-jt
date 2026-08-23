@@ -1,0 +1,75 @@
+{
+  "polarity_version": "1.0",
+  "note": "极性表（结论层配置，可调校）；三态映射 good=+1 / neutral=0 / bad=-1。语义说明见 推理规则.md 〇.4。type: enum=枚举映射 / directional=方向性 / context=中性·看位置（需经 reversal 反转）。",
+  "scale": { "good": 1, "neutral": 0, "bad": -1 },
+
+  "structure_backing": [
+    { "factor": "月线空间", "type": "enum", "mapping": { "打开/砸出空间": 1, "无": -1 } },
+    { "factor": "周线趋势", "type": "enum", "mapping": { "下跌衰竭/上涨顺势": 1, "无": -1 } },
+    { "factor": "日线区间套", "type": "enum", "mapping": { "有": 1, "无": -1 } },
+    { "factor": "外延·基本面", "type": "enum", "mapping": { "龙头/优质": 1, "负面": -1 } },
+    { "factor": "外延·政策力度", "type": "enum", "mapping": { "重大催化": 1, "无": -1 } }
+  ],
+
+  "factors": [
+    { "factor": "macd_area", "school": "chanlun", "type": "context", "polarity": "中性·看位置（后段<前段=好）" },
+    { "factor": "vol_sum", "school": "chanlun", "type": "context", "polarity": "中性·看位置" },
+    { "factor": "pct_change", "school": "chanlun", "type": "context", "polarity": "中性·看方向（正负号表方向）" },
+    { "factor": "zsPsVolExpand", "school": "wyckoff", "type": "context", "polarity": "中性·看位置（吸筹震仓=好/顶部出货=坏）" },
+    { "factor": "break_type", "school": "chanlun", "type": "enum", "mapping": { "breakout_valid": 1, "breakdown_fake": 1, "breakout_fake": -1, "breakdown_valid": -1 } },
+    { "factor": "ma60Slope", "school": "chanlun", "type": "directional", "mapping": { "向上": 1, "向下": -1 } },
+    { "factor": "deaSlope", "school": "chanlun", "type": "directional", "mapping": { "向上": 1, "向下": -1 } },
+    { "factor": "均线多头", "school": "wave", "type": "enum", "mapping": { "多头排列": 1, "空头排列": -1 } },
+    { "factor": "zsNarRange", "school": "wyckoff", "type": "directional", "mapping": { "窄": 1, "宽": -1 } },
+    { "factor": "zsTimeSpan", "school": "wyckoff", "type": "directional", "mapping": { "长": 1, "短": -1 } },
+    { "factor": "zsArVolShrink", "school": "wyckoff", "type": "directional", "mapping": { "小": 1, "大": -1 } },
+    { "factor": "zsUpLegAvgVolExpand", "school": "wyckoff", "type": "directional", "mapping": { "大": 1, "小": -1 } },
+    { "factor": "zsDownLegAvgVolShrink", "school": "wyckoff", "type": "directional", "mapping": { "小": 1, "大": -1 } },
+    { "factor": "zsNoDivergence", "school": "wyckoff", "type": "enum", "mapping": { "不背驰": 1, "背驰": -1 } },
+    { "factor": "zsHighOlp", "school": "wyckoff", "type": "directional", "mapping": { "小": 1, "大": -1 } },
+    { "factor": "supplyExhaustion", "school": "wyckoff", "type": "directional", "mapping": { "递减": 1, "不递减": -1 } },
+    { "factor": "washoutOrDistribution", "school": "wyckoff", "type": "enum", "mapping": { "洗盘(缩量)": 1, "派发(放量)": -1 } },
+    { "factor": "springTso", "school": "wyckoff", "type": "enum", "mapping": { "假破缩量": 1, "真破放量": -1 } },
+    { "factor": "sot", "school": "wyckoff", "type": "enum", "mapping": { "努力有结果": 1, "努力无结果(放量滞涨)": -1 } },
+    { "factor": "breakoutDecay", "school": "wyckoff", "type": "directional", "mapping": { "递减": -1, "不递减": 0 } },
+    { "factor": "fibRetraceZone", "school": "wave", "type": "enum", "mapping": { "0.382浅": 1, "0.5": 0, "0.618深": -1 } },
+    { "factor": "waveRuler_prevCycle3to1", "school": "wave", "type": "directional", "mapping": { "≥1": 1, "<1": -1 } },
+    { "factor": "waveTimeValid", "school": "wave", "type": "enum", "mapping": { "有效": 1, "失效": -1 } },
+    { "factor": "doubleBreakout", "school": "wave", "type": "enum", "mapping": { "真突破": 1, "假突破": -1 } },
+    { "factor": "resonanceZone", "school": "wave", "type": "enum", "mapping": { "共振": 1, "无共振": 0 } },
+    { "factor": "biStrong/fracStrong", "school": "chanlun", "type": "enum", "mapping": { "强": 1, "弱": -1 } },
+    { "factor": "bigYangBodyRatio", "school": "chanlun", "type": "directional", "mapping": { "大": 1, "小": -1 } },
+    { "factor": "breakVol", "school": "chanlun", "type": "directional", "mapping": { "放量突破": 1, "缩量突破": -1 } },
+    { "factor": "pullVol/retestVol", "school": "chanlun", "type": "directional", "mapping": { "小": 1, "大": -1 } },
+    { "factor": "reboundRiskReward", "school": "chanlun", "type": "directional", "mapping": { "高": 1, "低": -1 } },
+    { "factor": "maTight", "school": "chanlun", "type": "directional", "mapping": { "黏": 1, "散": -1 } },
+    { "factor": "rsi/cci", "school": "chanlun", "type": "enum", "mapping": { "超卖(底)": 1, "超买(顶)": -1 } }
+  ],
+
+  "reversal": [
+    { "factor": "vol_sum(放量)", "positions": [
+      { "name": "底部吸筹", "polarity": 1, "meaning": "堆量吸筹" },
+      { "name": "顶部趋势末端", "polarity": -1, "meaning": "放量出货" }
+    ] },
+    { "factor": "vol_sum(缩量)", "positions": [
+      { "name": "健康回调", "polarity": 1, "meaning": "缩量回调" },
+      { "name": "阴跌", "polarity": -1, "meaning": "缩量疲弱" }
+    ] },
+    { "factor": "macd_area", "positions": [
+      { "name": "底背离", "polarity": 1, "meaning": "衰竭到底=机会" },
+      { "name": "顶背离", "polarity": -1, "meaning": "衰竭到顶=风险" }
+    ] },
+    { "factor": "pct_change", "positions": [
+      { "name": "下跌衰竭(负向收敛)", "polarity": 1, "meaning": "砸出空间" },
+      { "name": "上涨衰竭(正向收敛)", "polarity": -1, "meaning": "涨透见顶" }
+    ] },
+    { "factor": "break_type(真跌破)", "positions": [
+      { "name": "底部震仓", "polarity": 1, "meaning": "缩量跌破速收=洗盘出清" },
+      { "name": "顶部破位", "polarity": -1, "meaning": "放量跌破不回=真破位" }
+    ] },
+    { "factor": "zsPsVolExpand", "positions": [
+      { "name": "吸筹中枢(震仓)", "polarity": 1, "meaning": "洗盘确认" },
+      { "name": "顶部趋势末端", "polarity": -1, "meaning": "放量出货" }
+    ] }
+  ]
+}

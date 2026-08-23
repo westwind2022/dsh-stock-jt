@@ -1,0 +1,66 @@
+{
+  "map_version": "2.0",
+  "map_name": "三闸门场景清单（架梯动力学归一化）",
+  "note": "三闸门演化语法（结构骨架，硬编码，非注入点）。语义见 技术面.md 符号体系 + 结构/README.md。场景由框架定义，流派不自造。",
+
+  "development_order": {
+    "desc": "发育序（时间）：行情围绕架梯分型发育的必经路径，串行双叉、不可换序",
+    "gates": [
+      {
+        "id": "gate_1",
+        "name": "成坡",
+        "en": "gate 1 · slope-formed",
+        "level": "本级别",
+        "binary": ["成坡", "不成坡"],
+        "judge": "架梯·前腿是否拉起本级别 60 线翘起并过前高",
+        "scenes": [
+          { "id": "gate_1_slope", "name": "成坡场景", "measure": "前腿成色（60线上翘+过前高+堆量）" },
+          { "id": "gate_1_no_slope", "name": "不成坡场景", "measure": null }
+        ]
+      },
+      {
+        "id": "gate_2",
+        "name": "挂坡蓄势",
+        "en": "gate 2 · hang-and-coil",
+        "level": "上一轮小级别",
+        "binary": ["简单回调", "复杂回调（箱体·蓄力）"],
+        "judge": "架梯·后腿是否回踩 60 线不破，以及以何形态蓄势",
+        "scenes": [
+          { "id": "gate_2_simple", "name": "简单回调场景", "measure": "后腿成色" },
+          { "id": "gate_2_complex", "name": "复杂回调场景（坡上震荡蓄势·再吸筹）", "measure": "后腿成色（挂坡不破+供给枯竭+回撤分位）" }
+        ]
+      },
+      {
+        "id": "gate_3",
+        "name": "点火",
+        "en": "gate 3 · ignition",
+        "level": "新一轮大级别",
+        "binary": ["触发", "成功", "失败"],
+        "judge": "第三腿是否重新向上突破；结果（成功/失败）归人观察",
+        "scenes": [
+          { "id": "gate_3_trigger", "name": "触发场景", "measure": "第三腿成色（真突破+放量+不背驰）" },
+          { "id": "gate_3_success", "name": "成功场景", "measure": null },
+          { "id": "gate_3_fail", "name": "失败场景", "measure": null }
+        ]
+      }
+    ]
+  },
+
+  "check_order": {
+    "desc": "检查序（分析）：深度投研操作序，非发育序（架梯动力学.md §4.5）",
+    "steps": [
+      { "step": 1, "name": "坐标", "target": "基准点", "dll": "基准点定位器", "role": "coordinate" },
+      { "step": 2, "name": "刻度", "target": "介入点", "dll": "介入器 36 反包回调", "role": "scale" },
+      { "step": 3, "name": "成色", "target": "左侧质量", "dll": "过滤器 21/22", "role": "quality" },
+      { "step": 4, "name": "右侧", "target": "第三腿发射状态", "dll": null, "role": "scale+quality" }
+    ]
+  },
+
+  "scene_split": {
+    "desc": "场景细分（框架拆，非流派自造）",
+    "震荡蓄势": [
+      { "id": "bottom_coil", "name": "底部震荡蓄势", "meaning": "首次吸筹（accumulation）", "gate": "gate_1 之前的左侧背景" },
+      { "id": "slope_coil", "name": "坡上震荡蓄势", "meaning": "再吸筹·蓄力（re-accumulation）", "gate": "gate_2 复杂回调" }
+    ]
+  }
+}
