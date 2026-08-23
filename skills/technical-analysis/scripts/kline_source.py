@@ -54,6 +54,7 @@ class KlinePacket:
         self.lows = lows
         self.closes = closes
         self.volumes = volumes
+        self.last_date = int(dates[-1]) if dates else None  # 末根日期（供新鲜度标注）
 
     def __len__(self):
         return len(self.dates)
@@ -342,7 +343,7 @@ class TdxMcpSource(KlineSource):
 
 
 # ============================================================
-# 本地前复权算法（05 原型已验证，偏差 vs 官方 qfq 0.04%）
+# 本地前复权算法（gbbq 仅纳 cat=1 派息、未计含税，偏差 vs 官方 qfq ~0.28%，见 gbbq.py 口径）
 # ============================================================
 
 def adjust_qfq_local(dates, opens, highs, lows, closes, volumes, period,
@@ -361,9 +362,12 @@ def adjust_qfq_local(dates, opens, highs, lows, closes, volumes, period,
     high_arr = np.asarray(highs, dtype=float)
     low_arr = np.asarray(lows, dtype=float)
 
-    # 日期归一化到"日"（30min/5min 的 12 位 yyyymmddhhmm → 日）
+    # 日期归一化到"日"：日/周/月为 8 位 yyyymmdd，分钟线为 12 位 yyyymmddhhmm，
+    # 事件侧恒为 8 位。此前统一 //10000 会把 8 位日期压成"年"，导致除权事件
+    # 当年（含事件日之前）的 K 线漏乘因子（P0-①），并令 M30 前复权永不生效（P0-②）。
     def _to_day(v):
-        return int(v) // 10000
+        iv = int(v)
+        return iv // 10000 if iv >= 100000000 else iv
     day_arr = np.array([_to_day(d) for d in dates], dtype=np.int64)
 
     ev_days = np.array([_to_day(int(pd.Timestamp(t).strftime("%Y%m%d")))

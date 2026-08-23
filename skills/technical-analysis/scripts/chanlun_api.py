@@ -132,7 +132,10 @@ class ChanlunAPI:
         raw = buf.value
         if not raw:
             return -1, None
-        return 0, json.loads(raw.decode("utf-8"))
+        try:
+            return 0, json.loads(raw.decode("utf-8"))
+        except (ValueError, TypeError, UnicodeDecodeError):
+            return -2, None  # JSON 解析兜底（P3：畸形导出不炸穿批量）
 
     def export_struct(self, handle, entity_kind, offset=-1, limit=-1):
         """导出结构产物，返回 (ret_code, result_dict_or_none)
@@ -151,7 +154,10 @@ class ChanlunAPI:
         raw = buf.value
         if not raw:
             return -1, None
-        return 0, json.loads(raw.decode("utf-8"))
+        try:
+            return 0, json.loads(raw.decode("utf-8"))
+        except (ValueError, TypeError, UnicodeDecodeError):
+            return -2, None  # JSON 解析兜底（P3：畸形导出不炸穿批量）
 
     def encode_param_set(self, param_json):
         """JSON ParamSet → 通达信编码 (TZP1, TZP2)"""
@@ -170,7 +176,10 @@ class ChanlunAPI:
         if ret != 0:
             return None
         raw = buf.value
-        return json.loads(raw.decode("utf-8")) if raw else None
+        try:
+            return json.loads(raw.decode("utf-8")) if raw else None
+        except (ValueError, TypeError, UnicodeDecodeError):
+            return None  # JSON 解析兜底（P3）
 
     def begin_dynamic_debug(self, stock_code, start_idx, end_idx):
         """开启动态调试会话，返回 0=成功"""

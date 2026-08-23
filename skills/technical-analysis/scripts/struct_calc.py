@@ -32,6 +32,7 @@ import json
 import os
 import sys
 from contextlib import contextmanager
+from datetime import date
 
 from chanlun_api import ChanlunAPI
 from gbbq import GbbqIndex
@@ -227,36 +228,59 @@ def build_source_manager(env, root=None):
         if gbbq_index is not None else None
 
     srcs = []
+    skipped = []  # 因缺配置被跳过的源（P3：备源缺失不静默，随 mgr.skipped 披露）
     for name in [s.strip() for s in order if s.strip()]:
         if name == "vipdoc" and vipdoc_root:
             srcs.append((VipdocSource(vipdoc_root, xdxr_loader), 1))
+        elif name == "vipdoc":
+            skipped.append("vipdoc(未找到 vipdoc 根目录)")
         elif name == "tdxmcp":
             token = env.get("TDX_MCP_TOKEN", "")
             base = env.get("TDX_MCP_BASE", MCP_BASE_DEFAULT)
-            if token:  # 无 token 则跳过备源（不静默，见 read_structure 的降级披露）
+            if token:
                 srcs.append((TdxMcpSource(base, token), 2))
+            else:
+                skipped.append("tdxmcp(未配置 TDX_MCP_TOKEN)")
     if not srcs:
         raise RuntimeError("无可用 K 线源（vipdoc 无数据且 MCP token 未配置）")
-    return SourceManager(srcs)
+    mgr = SourceManager(srcs)
+    mgr.skipped = skipped
+    return mgr
 
 
 # ============================================================
 # 顶层入口
 # ============================================================
 
+def _stale_days(last_date):
+    """末根日期（8 位 yyyymmdd 或 12 位 yyyymmddhhmm）距今天数（日历日，负值截 0）。"""
+    if not last_date:
+        return None
+    iv = int(last_date)
+    if iv >= 100000000:
+        iv = iv // 10000
+    try:
+        last = date(iv // 10000, (iv // 100) % 100, iv % 100)
+    except ValueError:
+        return None
+    return max(0, (date.today() - last).days)
+
+
 def read_structure(session, source_mgr, stock_code, period, count):
-    """取前复权 K 线 → 算结构。返回 (structure_dict, source_name, degrade_info)。
+    """取前复权 K 线 → 算结构。返回 (structure_dict, source_name, degrade_info, meta)。
 
     degrade_info：None 或 "vipdoc空数据→tdxmcp" 等降级描述（供简报 §6 披露）。
+    meta：{"last_date": 末根日期, "stale_days": 陈旧天数}，供新鲜度披露（P1-③）。
     """
     pkt, used_src, err = source_mgr.read(stock_code, period, count)
     if pkt is None:
         # 主备全不可用
         names = [s.name for s, _ in source_mgr._sources]
-        return None, used_src, "来源[{0}]均不可用: {1}".format(",".join(names), err)
+        return None, used_src, "来源[{0}]均不可用: {1}".format(",".join(names), err), None
     degrade = "降级[{0}]".format(used_src) if _was_degraded(source_mgr, used_src) else None
     struct = session.calc_structure(stock_code, period, pkt)
-    return struct, used_src, degrade
+    meta = {"last_date": pkt.last_date, "stale_days": _stale_days(pkt.last_date)}
+    return struct, used_src, degrade, meta
 
 
 def _was_degraded(source_mgr, used_name):
@@ -269,13 +293,29 @@ def _was_degraded(source_mgr, used_name):
 # CLI（阶段 1 验证用）
 # ============================================================
 
+def _fix_stdout_utf8():
+    """Windows 控制台中文乱码加固：stdout/stderr 固定 UTF-8（P1-④）。"""
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding="utf-8")
+        except (AttributeError, ValueError):
+            pass
+
+
 def main():
-    code = sys.argv[1] if len(sys.argv) > 1 else "600519"
-    period_name = sys.argv[2] if len(sys.argv) > 2 else "day"
-    count = int(sys.argv[3]) if len(sys.argv) > 3 else 250
-    if period_name not in _PERIOD_MAP:
-        print("未知周期: {0}（可选 {1}）".format(period_name, list(_PERIOD_MAP)))
-        return 2
+    _fix_stdout_utf8()
+    import argparse
+    ap = argparse.ArgumentParser(
+        description="投研取数：取前复权 K 线 → chanlun_dll 五实体结构计算")
+    ap.add_argument("code", nargs="?", default="600519",
+                    help="股票代码（默认 600519）")
+    ap.add_argument("period", nargs="?", default="day",
+                    choices=list(_PERIOD_MAP),
+                    help="周期 day/week/month/m30（默认 day）")
+    ap.add_argument("count", nargs="?", default=250, type=int,
+                    help="取最近 N 根（默认 250）")
+    args = ap.parse_args()
+    code, period_name, count = args.code, args.period, args.count
     period = _PERIOD_MAP[period_name]
 
     env = load_runtime_env()
@@ -283,12 +323,19 @@ def main():
     mgr = build_source_manager(env)
 
     print("dll: {0}".format(dll))
+    skipped = getattr(mgr, "skipped", [])
+    if skipped:
+        print("备源跳过: {0}".format("；".join(skipped)))
     with chanlun_session(dll) as sess:
-        struct, used, degrade = read_structure(sess, mgr, code, period, count)
+        struct, used, degrade, meta = read_structure(sess, mgr, code, period, count)
         if struct is None:
             print("取数失败: {0}".format(degrade))
             return 1
         print("来源: {0}；{1}".format(used, degrade or "正常"))
+        if meta and meta["stale_days"] is not None:
+            flag = "（陈旧，请检查数据更新）" if meta["stale_days"] >= 7 else ""
+            print("数据: 末根 {0}，距今 {1} 天{2}".format(
+                meta["last_date"], meta["stale_days"], flag))
         for kind in _ENTITY_KINDS:
             v = struct.get(kind)
             n = len(v) if isinstance(v, (list, dict)) else "?"

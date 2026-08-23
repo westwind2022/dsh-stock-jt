@@ -73,20 +73,76 @@ window.__ModuleLoader__.load({ id: "dsh-stock-jt", factory: (require) => {
     note1: "保存后立即写入插件 runtime.env（原子替换）；重启 dsh web 后 skill 取数即用新配置。",
     note2: "TDX_MCP_TOKEN 为机密，页面仅显示 ********，修改时直接输入新值保存。",
   };
-  const en = zh;
+  // 英文文案（P2-⑦：此前 const en = zh 为假 i18n，现为真实翻译）
+  const en = {
+    nav: "Technical Analysis",
+    subtitle: "dsh-stock-jt · Technical analysis based on ladder dynamics (consumes chanlun structure data)",
+    tabEnv: "Environment",
+    tabPrompts: "Work Prompts",
+    envTitle: "Environment Settings",
+    envHint: "Configure data sources and runtime paths here (written to the plugin runtime.env). Check the sources you need and fill in as prompted; if the plugin finds a missing setting during a session, it will guide you back to this page.",
+    dsTitle: "Data sources (multi-select)",
+    ds1: "Local vipdoc (TongDaXin)",
+    ds2: "Cloud tdx-mcp",
+    fieldTdxRoot: "TDX_ROOT (TongDaXin root directory, required when vipdoc is checked)",
+    fieldToken: "TDX_MCP_TOKEN (required when tdx-mcp is checked; bring your own token, shown masked)",
+    fieldVenv: "VENV_PYTHON (recommended: absolute interpreter path for reproducibility; leave empty to use the current interpreter)",
+    probeTitle: "Detected local Python interpreter (click to fill VENV_PYTHON):",
+    probeUse: "Use",
+    probeNone: "No local Python detected — enter the interpreter absolute path in VENV_PYTHON manually, or install Python \u22653.10 and reopen this page.",
+    depNote: "Python dependencies (needed for data fetching): numpy / pandas / requests; requires Python >=3.10. When VENV_PYTHON is set, the plugin uses that interpreter (cross-machine reproducible); empty uses the current interpreter (env_check shows its absolute path). To install missing deps, copy the \u201cWork Prompts \u2192 Local dependency check & install\u201d prompt to the assistant.",
+    placeholderTdxRoot: "e.g. D:\\tdx2026\\new_tdx64_day (vipdoc/gbbq derived from it)",
+    placeholderToken: "Bring your own token; shows ******** if configured",
+    placeholderVenv: "e.g. D:\\...\\venv\\Scripts\\python.exe (Python >=3.10)",
+    save: "Save config",
+    saving: "Saving\u2026",
+    saved: "\u2713 Saved",
+    saveFail: "Save failed: ",
+    loadFail: "Config load failed: ",
+    promptTitle: "Work Prompts (copy into the session)",
+    promptHint: "Paste a prompt into a DSH session; it is executed by the technical-analysis skill + LLM. Feature configuration has start/acceptance sections.",
+    p1Title: "Technical Analysis",
+    p1Desc: "Ladder-dynamics analysis for one symbol (momentum/shape, slope D\u207a/D/D\u207b, strong start E\u207a/E/E\u207b, divergence/strength)",
+    p1Copy: "Perform technical analysis on {code}",
+    p2Title: "Knowledge Distillation",
+    p2Desc: "Distill courseware/notes/cases into technical-analysis reasoning rules and feature tables (推理规则.md + 特征/ + config/)",
+    p2Copy: "Run technical-analysis knowledge distillation: source file path = <replace with the courseware/notes/case file path>. The input is that file's content; the output updates internal/技术面/ (推理规则.md, 特征/{坐标,成色,刻度}.md, config/{polarity_table,weight_table,feature_anchor}.json, 案例库.md). Distillation rules: scenarios come from the framework \u2014 do not invent them; the four-step reading sequence is fixed \u2014 do not reorder; the fact layer (factor names + fields + values) is not to be tuned; the conclusion layer (polarity/weight) may be tuned; every rule anchors to table.field + factor value; thresholds reference courseware empirical values \u2014 no hardcoding. Self-check each output, then report the list of differences.",
+    p3Title: "Feature Configuration",
+    p3Desc: "Configure feature anchors (feature_anchor), polarity table, weight table, and capability manifest (capability_manifest)",
+    p3StartTitle: "Start prompt",
+    p3StartCopy: "Start the feature-configuration task: goal = maintain internal/技术面/config/ {feature_anchor, polarity_table, weight_table, capability_manifest}.json. Steps: 1) read the current state first (4 jsons + 推理规则.md §0.4 + 特征/ three tables + db/schema.md field semantics); 2) verify consistency against the four contracts \u2014 feature\u2192field anchoring, three-state polarity, weights default 1.0 and tunable, capability self-declaration; 3) list proposed changes item by item (field name/polarity/weight/declaration) with rationale and source; 4) do NOT edit files directly \u2014 give the change list first and wait for my confirmation. Red lines: the fact layer (field names + factor values) is not to be tuned; the conclusion layer (polarity/weight) may be tuned; no hardcoded thresholds; scenarios are defined by the framework.",
+    p3AcceptTitle: "Acceptance prompt",
+    p3AcceptCopy: "Acceptance-check the feature configuration: against the 4 jsons and 推理规则.md/feature tables/db schema \u2014 1) every field in feature_anchor exists in db/schema.md or the struct JSON with consistent semantics; 2) polarity_table three states (+1/0/-1) cover all used factors, reversal entries match the \u201cneutral \u00b7 look at position\u201d note; 3) weight_table keys align with polarity_table factors, weights tunable; 4) capability_manifest injection_points.declarations correspond one-to-one with the feature tables/anchor table; 5) no hardcoded absolute thresholds (reference the source table); 6) output a pass/fail verdict + list of differences.",
+    p4Title: "Local Dependency Check & Install",
+    p4Desc: "Check the Python libs required by the plugin (numpy/pandas/requests); when missing, provide install guidance (no auto-install; confirmed by you)",
+    p4Copy: "Check local environment dependencies for dsh-stock-jt (technical analysis): 1) run scripts/env_check.py and inspect the PY_DEP:* items and venv supply status; 2) if numpy/pandas/requests are missing, list the missing libs and install commands (python -m pip install <lib>, may target a venv); 3) only output detection results and install guidance, do not auto-install; 4) installation is executed manually after user confirmation; re-run env_check afterwards to re-verify ready.",
+    postTitle: "\ud83d\udcda Ladder-dynamics knowledge post (technical exchange welcome)",
+    postLink: "https://www.55188.com/thread-40583984-1-1.html",
+    copyBtn: "Copy",
+    copied: "\u2713 Copied",
+    statusTitle: "Config status",
+    statusOk: "Configured",
+    statusEmpty: "Not configured",
+    statusHint: "\u2605 means configured; missing items will be prompted for in the session.",
+    noteTitle: "Notes",
+    note1: "Saving writes the plugin runtime.env immediately (atomic replace); after restarting the dsh web server, skill data fetching uses the new config.",
+    note2: "TDX_MCP_TOKEN is secret; the page only shows ********. Enter a new value and save to change it.",
+  };
 
   // ============================================================
   // 小工具
   // ============================================================
   function useEnv() {
     const [state, setState] = react.useState({ loading: true, error: null, payload: null });
+    // reload 依赖 [] 保持稳定：此前依赖 state.payload（每次 fetch 都是新对象引用）
+    // 导致 useEffect 反复触发 → 无限 GET 轮询（P2-⑥）。改用函数式 setState 取旧值。
     const reload = react.useCallback(() => {
-      setState({ loading: true, error: null, payload: state.payload });
+      setState((s) => ({ loading: true, error: null, payload: s.payload }));
       fetch(ENV_URL, { headers: { accept: 'application/json' } })
         .then((r) => (r.ok ? r.json() : Promise.reject(new Error('HTTP ' + r.status))))
         .then((payload) => setState({ loading: false, error: null, payload }))
-        .catch((e) => setState({ loading: false, error: e.message, payload: state.payload }));
-    }, [state.payload]);
+        .catch((e) => setState((s) => ({ loading: false, error: e.message, payload: s.payload })));
+    }, []);
     react.useEffect(() => { reload(); }, [reload]);
     return [state, reload];
   }

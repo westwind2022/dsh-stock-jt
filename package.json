@@ -36,7 +36,7 @@
     "index.js",
     "client",
     "cordis.patch.yml",
-    "config",
+    "config/runtime.env.example",
     "vendor",
     "skills",
     "README.md",

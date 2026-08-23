@@ -355,7 +355,17 @@ def write_config(assignments, path):
     return path
 
 
+def _fix_stdout_utf8():
+    """Windows 控制台中文乱码加固：stdout/stderr 固定 UTF-8（P1-④）。"""
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding="utf-8")
+        except (AttributeError, ValueError):
+            pass
+
+
 def main():
+    _fix_stdout_utf8()
     args = sys.argv[1:]
     json_only = "--json" in args
     writes = [a for a in args if a.startswith("--write=")]

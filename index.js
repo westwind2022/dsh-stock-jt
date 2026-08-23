@@ -16,7 +16,7 @@
  */
 import { readdir, readFile, writeFile, rename } from 'node:fs/promises';
 import { existsSync, readFileSync } from 'node:fs';
-import { spawnSync } from 'node:child_process';
+import { spawn } from 'node:child_process';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -117,7 +117,7 @@ export function apply(ctx, config) {
           return;
         }
         try {
-          sendJson(response, 200, readEnvPayload());
+          sendJson(response, 200, await readEnvPayload());
         } catch (error) {
           sendJson(response, 500, { error: error instanceof Error ? error.message : String(error) });
         }
@@ -139,7 +139,7 @@ export function apply(ctx, config) {
         try {
           const body = await readJsonBody(request);
           await writeEnvFromBody(body);
-          sendJson(response, 200, readEnvPayload());
+          sendJson(response, 200, await readEnvPayload());
         } catch (error) {
           sendJson(response, 400, { error: error instanceof Error ? error.message : String(error) });
         }
@@ -169,7 +169,7 @@ const EDITABLE_KEYS = ['KLINE_SOURCES', 'TDX_ROOT', 'TDX_MCP_TOKEN', 'VENV_PYTHO
 /** 机密键：GET 时脱敏（不回传明文 token）。 */
 const SECRET_KEYS = ['TDX_MCP_TOKEN'];
 
-/** 解析 runtime.env（KEY=VALUE，# 注释剥离），返回键值对象。 */
+/** 解析 runtime.env（KEY=VALUE，# 注释剥离），返回键值对象。与 Python load_runtime_env 同口径。 */
 function parseEnvFile(text) {
   const out = {};
   for (const rawLine of text.split(/\r?\n/)) {
@@ -178,31 +178,37 @@ function parseEnvFile(text) {
     const eq = line.indexOf('=');
     const k = line.slice(0, eq).trim();
     let v = line.slice(eq + 1).trim();
-    const hash = v.indexOf(' #');
+    const hash = v.indexOf('#');  // 任意 # 起为行内注释（对齐 Python split("#",1)）
     if (hash >= 0) v = v.slice(0, hash).trim();
     if (k) out[k] = v;
   }
   return out;
 }
 
-/** 序列化为 runtime.env 文本（编辑键在前，其余既有键原样保留，注释为文档）。 */
-function serializeEnvFile(values) {
-  const lines = [
-    '# dsh-stock-jt 运行配置（由设置页维护，勿手改；机密值不回传明文）',
-    'KLINE_SOURCES=' + (values.KLINE_SOURCES || 'vipdoc,tdxmcp'),
-    'TDX_ROOT=' + (values.TDX_ROOT || ''),
-    'TDX_MCP_TOKEN=' + (values.TDX_MCP_TOKEN || ''),
-    'VENV_PYTHON=' + (values.VENV_PYTHON || ''),
-  ];
-  for (const k of Object.keys(values)) {
-    if (EDITABLE_KEYS.includes(k)) continue;
-    lines.push(k + '=' + values[k]);
+/** 序列化 runtime.env：保留原注释与行序，仅在原位置更新编辑键、末尾追加缺失键。
+ * 与 Python write_config 同口径（P2-⑧：此前写回会丢弃全部注释并重排非编辑键）。 */
+function serializeEnvFile(next, originalText) {
+  const editable = new Set(EDITABLE_KEYS);
+  const written = new Set();
+  const out = [];
+  const lines = originalText ? originalText.split(/\r?\n/) : [];
+  for (const raw of lines) {
+    const m = raw.trim().match(/^([A-Za-z0-9_]+)=/);
+    if (m && editable.has(m[1])) {
+      out.push(m[1] + '=' + (next[m[1]] ?? ''));
+      written.add(m[1]);
+    } else {
+      out.push(raw);
+    }
   }
-  return lines.join('\n') + '\n';
+  for (const k of EDITABLE_KEYS) {
+    if (!written.has(k)) out.push(k + '=' + (next[k] ?? ''));
+  }
+  return out.join('\n') + '\n';
 }
 
 /** GET 载荷：编辑键的当前值（机密脱敏）+ 全键清单（非机密显示值）。 */
-function readEnvPayload() {
+async function readEnvPayload() {
   const existing = existsSync(RUNTIME_ENV_FILE)
     ? parseEnvFile(readFileSync(RUNTIME_ENV_FILE, 'utf8'))
     : {};
@@ -217,48 +223,77 @@ function readEnvPayload() {
     editableKeys: EDITABLE_KEYS,
     fileExists: existsSync(RUNTIME_ENV_FILE),
     configDir: CONFIG_DIR,
-    pythonProbe: probePython(),
+    pythonProbe: await probePython(),
   };
 }
 
 /** 探测本机可用的 Python/venv 解释器（供设置页显式指定 VENV_PYTHON）。
  * 返回 [{path, version, source}]：source = system（PATH 中的 python / py）/ venv（插件包或仓库 .venv）。
- * 探测失败返回 []（页面显示"未检测到，请手动填写"）。 */
-function probePython() {
+ * 探测失败返回 []（页面显示"未检测到，请手动填写"）。
+ * 异步 + 短 TTL 缓存（P2-⑥：不再用 spawnSync 同步阻塞主线程）。 */
+const PROBE_CACHE_TTL_MS = 60_000;
+let probeCache = { at: 0, value: null };
+
+/** 非阻塞运行子进程并捕获 stdout；超时或启动失败返回 null/{code:-1}。 */
+function runCaptured(command, args, timeoutMs = 8000) {
+  return new Promise((resolve) => {
+    let out = '';
+    let done = false;
+    const child = spawn(command, args, { windowsHide: true });
+    const timer = setTimeout(() => {
+      if (!done) { done = true; child.kill(); resolve({ code: -1, out }); }
+    }, timeoutMs);
+    child.stdout.on('data', (d) => { out += d; });
+    child.on('error', () => {
+      if (!done) { done = true; clearTimeout(timer); resolve(null); }
+    });
+    child.on('close', (code) => {
+      if (!done) { done = true; clearTimeout(timer); resolve({ code, out }); }
+    });
+  });
+}
+
+async function probePython() {
+  const now = Date.now();
+  if (probeCache.value !== null && now - probeCache.at < PROBE_CACHE_TTL_MS) {
+    return probeCache.value;
+  }
   const found = [];
   // 1) 插件包 .venv（若有）
   const bundledVenv = join(ROOT, '.venv', process.platform === 'win32' ? 'Scripts/python.exe' : 'bin/python');
   if (existsSync(bundledVenv)) {
-    const v = pythonVersion(bundledVenv);
+    const v = await pythonVersion(bundledVenv);
     if (v) found.push({ path: bundledVenv, version: v, source: 'venv(包内)' });
   }
   // 2) PATH 中的 python / py（系统解释器）
   for (const candidate of [['python', ['-c', 'import sys; print(sys.executable)']],
                            ['py', ['-3', '-c', 'import sys; print(sys.executable)']]]) {
     const [cmd, args] = candidate;
-    const r = spawnSync(cmd, args, { encoding: 'utf8', timeout: 8000 });
-    if (r.status === 0 && r.stdout) {
-      const p = r.stdout.trim().split(/\r?\n/)[0];
+    const r = await runCaptured(cmd, args);
+    if (r && r.code === 0 && r.out) {
+      const p = r.out.trim().split(/\r?\n/)[0];
       if (p && existsSync(p) && !found.some((f) => f.path === p)) {
-        const v = pythonVersion(p);
+        const v = await pythonVersion(p);
         if (v) found.push({ path: p, version: v, source: 'system' });
       }
     }
   }
+  probeCache = { at: now, value: found };
   return found;
 }
 
-function pythonVersion(pythonPath) {
-  const r = spawnSync(pythonPath, ['-c', 'import sys; print("%d.%d.%d" % sys.version_info[:3])'], { encoding: 'utf8', timeout: 8000 });
-  if (r.status === 0 && r.stdout) return r.stdout.trim().split(/\r?\n/)[0];
+async function pythonVersion(pythonPath) {
+  const r = await runCaptured(pythonPath, ['-c', 'import sys; print("%d.%d.%d" % sys.version_info[:3])']);
+  if (r && r.code === 0 && r.out) return r.out.trim().split(/\r?\n/)[0];
   return null;
 }
 
-/** POST：接受白名单键的明文（机密键非 '********' 时视为新值），原子写盘。 */
+/** POST：接受白名单键的明文（机密键非 '********' 时视为新值），原子写盘（保留注释与行序）。 */
 async function writeEnvFromBody(body) {
-  const existing = existsSync(RUNTIME_ENV_FILE)
-    ? parseEnvFile(readFileSync(RUNTIME_ENV_FILE, 'utf8'))
-    : {};
+  const original = existsSync(RUNTIME_ENV_FILE)
+    ? readFileSync(RUNTIME_ENV_FILE, 'utf8')
+    : '';
+  const existing = original ? parseEnvFile(original) : {};
   const next = { ...existing };
   for (const k of EDITABLE_KEYS) {
     if (!(k in body)) continue;
@@ -267,7 +302,7 @@ async function writeEnvFromBody(body) {
     next[k] = v;
   }
   const tmp = RUNTIME_ENV_FILE + '.tmp';
-  await writeFile(tmp, serializeEnvFile(next), 'utf8');
+  await writeFile(tmp, serializeEnvFile(next, original), 'utf8');
   await rename(tmp, RUNTIME_ENV_FILE);
 }
 
