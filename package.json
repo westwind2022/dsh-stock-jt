@@ -1,0 +1,46 @@
+{
+  "name": "dsh-stock-jt",
+  "version": "0.1.0",
+  "description": "技术面研判（架梯动力学）DSH 插件——独立 skill（technical-analysis）+ 投研取数脚本（struct_calc.py），消费 chanlun_dll 结构数据产出供人决策的论据。",
+  "type": "module",
+  "private": true,
+  "main": "index.js",
+  "license": "Apache-2.0",
+  "author": "westwind2022",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/westwind2022/dsh-stock-jt.git"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "inject": [
+        "@deepseek-ai/dsh-client-connection",
+        "@deepseek-ai/dsh-client-runtime",
+        "@deepseek-ai/dsh-client-locale",
+        "@deepseek-ai/dsh-client-ui-settings",
+        "@deepseek-ai/dsh-client-ui-theme"
+      ],
+      "platform": "web"
+    }
+  },
+  "exports": {
+    ".": "./index.js",
+    "./client": "./client/client.js",
+    "./cordis.patch.yml": "./cordis.patch.yml",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "index.js",
+    "client",
+    "cordis.patch.yml",
+    "config",
+    "vendor",
+    "skills",
+    "README.md",
+    "LICENSE",
+    "NOTICE"
+  ]
+}

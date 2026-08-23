@@ -1,0 +1,18 @@
+dsh-stock-jt
+
+Copyright 2026 dsh-stock-jt contributors
+
+This product includes the following software components with separate
+licensing terms:
+
+1. vendor/chanlun64.dll
+   chanlun_dll 编译产物（x64 静态链接）。该二进制组件为独立作品，
+   以「仅二进制分发、源码不公开」条款随本插件提供，**不适用 Apache-2.0
+   许可**（Apache-2.0 仅覆盖本仓库的源码/知识层/前端代码）。
+   如需该组件的源码或授权，请联系版权方另行协商。
+
+2. 知识层（skills/technical-analysis/internal/**）
+   阈值经验值来源已脱敏归档（见《推理规则.md》附：阈值来源表），
+   不公开原始出处。
+
+除上述组件外，本仓库其余部分均以 Apache License 2.0 授权。

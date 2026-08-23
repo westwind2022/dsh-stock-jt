@@ -1,0 +1,5 @@
+# 机密/运行时产物禁入库
+config/runtime.env
+.venv/
+__pycache__/
+*.pyc
