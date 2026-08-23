@@ -106,49 +106,40 @@ export function apply(ctx, config) {
   }));
 
   // ---- 环境配置 HTTP 路由（供设置页读写 runtime.env，token 脱敏）----
+  // 单一注册 + method 分发：此前 GET/POST 各注册一条 exact 路由，路由按路径命中
+  // （忽略 method）且 GET 先注册 → POST 被 GET 处理器截获返回 405（保存失败: HTTP 405）。
   const mountRoutes = (host) => {
-    const disposeGet = host.webServer.register({
+    const dispose = host.webServer.register({
       kind: 'exact',
       path: '/dsh-stock-jt/env',
       handler: async (request, response) => {
-        if (request.method !== 'GET') {
-          response.writeHead(405, { allow: 'GET, POST' });
-          response.end();
+        if (request.method === 'GET') {
+          try {
+            sendJson(response, 200, await readEnvPayload());
+          } catch (error) {
+            sendJson(response, 500, { error: error instanceof Error ? error.message : String(error) });
+          }
           return;
         }
-        try {
-          sendJson(response, 200, await readEnvPayload());
-        } catch (error) {
-          sendJson(response, 500, { error: error instanceof Error ? error.message : String(error) });
+        if (request.method === 'POST') {
+          if (!sameOrigin(request)) {
+            sendJson(response, 403, { error: 'untrusted origin' });
+            return;
+          }
+          try {
+            const body = await readJsonBody(request);
+            await writeEnvFromBody(body);
+            sendJson(response, 200, await readEnvPayload());
+          } catch (error) {
+            sendJson(response, 400, { error: error instanceof Error ? error.message : String(error) });
+          }
+          return;
         }
+        response.writeHead(405, { allow: 'GET, POST' });
+        response.end();
       },
     });
-    const disposePost = host.webServer.register({
-      kind: 'exact',
-      path: '/dsh-stock-jt/env',
-      handler: async (request, response) => {
-        if (request.method !== 'POST') {
-          response.writeHead(405, { allow: 'GET, POST' });
-          response.end();
-          return;
-        }
-        if (!sameOrigin(request)) {
-          sendJson(response, 403, { error: 'untrusted origin' });
-          return;
-        }
-        try {
-          const body = await readJsonBody(request);
-          await writeEnvFromBody(body);
-          sendJson(response, 200, await readEnvPayload());
-        } catch (error) {
-          sendJson(response, 400, { error: error instanceof Error ? error.message : String(error) });
-        }
-      },
-    });
-    return () => {
-      disposeGet();
-      disposePost();
-    };
+    return () => dispose();
   };
 
   ctx.inject(['webServer'], (hostCtx) => {
