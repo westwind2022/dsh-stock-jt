@@ -1,0 +1,9 @@
+# dsh-stock-jt bundle patch: register the plugin itself (dshmarket pattern).
+# The plugin's index.js apply() registers a minimal, isolated skill provider
+# that serves only this package's skills/ directory. We deliberately do NOT
+# touch the existing `skill-filesystem` row: cordis patches REPLACE a targeted
+# row's whole config (never merge), so overriding it would wipe the home-level
+# customSkillDirs (.trae/skills + deep_agent/skills).
+- insert:
+    - id: dsh-stock-jt
+      name: 'dsh-stock-jt'
