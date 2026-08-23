@@ -20,7 +20,11 @@ gbbq.py - 通达信本地除权除息（gbbq）解析（独立部署用）
 """
 
 from collections import defaultdict
+import hashlib
+import os
+import pickle
 import struct
+import tempfile
 
 
 def make_hexdump_keys():
@@ -243,13 +247,56 @@ def read_gbbq(fname):
     return result
 
 
+def _source_sig(path):
+    """gbbq 源文件指纹（size-mtime_ns），用于持久缓存失效判定。"""
+    try:
+        st = os.stat(path)
+        return "{0}-{1}".format(st.st_size, st.st_mtime_ns)
+    except OSError:
+        return "?"
+
+
+def _cache_path_for(gbbq_path, sig):
+    """持久缓存文件路径：系统临时目录，文件名含源路径哈希 + 源指纹。
+    gbbq 更新 → 指纹变 → 新缓存文件名，旧缓存自然失效（OS 临时目录自动清理）。"""
+    key = hashlib.md5(os.path.abspath(gbbq_path).encode("utf-8")).hexdigest()[:16]
+    return os.path.join(tempfile.gettempdir(),
+                        "dsh-jt-gbbq-{0}-{1}.pkl".format(key, sig))
+
+
 class GbbqIndex:
-    """gbbq 事件按 code 索引，进程内缓存（一次解析全库，避免重复解密）。"""
+    """gbbq 事件按 code 索引（一次解析全库）。
+
+    全库解密慢（本地 ~5MB 约 9s，P3-⑫），故加**跨进程持久缓存**：落系统临时目录，
+    文件名带源文件指纹（size-mtime_ns），gbbq 更新即换新缓存自动失效；命中直接
+    反序列化，免去每次 struct_calc 进程的全库解密。缓存读写失败均优雅降级回全量解密。
+    """
 
     def __init__(self, gbbq_path):
         self._by_code = defaultdict(list)
+        sig = _source_sig(gbbq_path)
+        cache = _cache_path_for(gbbq_path, sig)
+        if self._try_load(cache):
+            return
         for e in read_gbbq(gbbq_path):
             self._by_code[e[1]].append(e)
+        self._try_save(cache)
+
+    def _try_load(self, cache):
+        try:
+            with open(cache, "rb") as f:
+                data = pickle.load(f)
+        except Exception:  # noqa: BLE001 缓存损坏/不可读 → 回退全量解密
+            return False
+        self._by_code.update(data)
+        return True
+
+    def _try_save(self, cache):
+        try:
+            with open(cache, "wb") as f:
+                pickle.dump(dict(self._by_code), f, protocol=4)
+        except OSError:
+            pass  # 缓存写入失败不阻塞（下次重新解密）
 
     def events_of(self, code):
         """返回该 code 的事件列表 [(market, code, date, category, fh, pg, pgj, szg)]。"""
