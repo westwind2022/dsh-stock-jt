@@ -1,6 +1,6 @@
 # dsh-stock-jt — 技术面研判（架梯动力学）DSH 插件
 
-**技术面维度**独立 DSH 插件：独立 skill（`technical-analysis`）+ 投研取数脚本（`struct_calc.py`），消费 chanlun_dll 结构数据产出**供人决策的论据**（架梯分型 / 挂坡 D⁺/D/D⁻ / 强势起步 E⁺/E/E⁻ / 背驰 / 强弱）。
+**技术面维度**独立的 DSH 插件：独立 skill（`technical-analysis`）+ 投研取数脚本（`struct_calc.py`），消费 chanlun_dll 结构数据产出**供人决策的论据**（架梯分型 / 挂坡 D⁺/D/D⁻ / 强势起步 E⁺/E/E⁻ / 背驰 / 强弱）。
 
 ## 结构
 
